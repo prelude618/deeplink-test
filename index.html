@@ -1,0 +1,58 @@
+<!doctype html>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Nametag Deep Link Test</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 24px; }
+  label { display:block; margin-bottom:6px; font-weight:600; }
+  input, a { font-size:16px; }
+  input { width:100%; max-width:400px; padding:8px; }
+  .row { display:flex; flex-wrap:wrap; gap:10px; margin-top:16px; }
+  .btn { padding:10px 14px; border-radius:6px; border:1px solid #ccc; text-decoration:none; }
+  .btn.primary { background:#0b57d0; color:white; border-color:#0b57d0; }
+</style>
+
+<h2>Nametag Deep Link Test</h2>
+
+<label for="token">Enter token:</label>
+<input id="token" type="text" placeholder="Enter your token (e.g. rvapdsypcajnbn)" />
+
+<div class="row">
+  <a id="openApp" href="#" class="btn primary">Open in app → request screen</a>
+  <a id="getApp" href="#" class="btn">Get the app (internal test) → then Open</a>
+</div>
+
+<script>
+  const PKG = "nametag.hello"; // your app's package name
+  const SCHEME = "nametag";
+  const INTERNAL_TEST_WEB = "https://play.google.com/apps/internaltest/4700760087118708525";
+  const TESTER_OPT_IN = `https://play.google.com/apps/testing/${PKG}`;
+
+  const openApp = document.getElementById("openApp");
+  const getApp = document.getElementById("getApp");
+  const tokenInput = document.getElementById("token");
+
+  function updateLinks() {
+    const t = encodeURIComponent(tokenInput.value.trim());
+    if (!t) return;
+
+    // Intent for installed app
+    const openIntent = `intent://i/${t}#Intent;scheme=${SCHEME};package=${PKG};end`;
+    openApp.setAttribute("href", openIntent);
+
+    // Intent for Play Store app (with referrer)
+    const ref = encodeURIComponent(`utm_source=qr&t=${t}`);
+    const playIntent =
+      `intent://details?id=${PKG}` +
+      `#Intent;scheme=market;package=com.android.vending;S.referrer=${ref};end`;
+
+    getApp.onclick = (e) => {
+      e.preventDefault();
+      location.href = playIntent;
+      // fallback chain
+      setTimeout(() => location.replace(INTERNAL_TEST_WEB), 700);
+      setTimeout(() => location.replace(TESTER_OPT_IN), 1500);
+    };
+  }
+
+  tokenInput.addEventListener("input", updateLinks);
+</script>
