@@ -22,15 +22,15 @@
 </div>
 
 <script>
-  // ⚠️ Set this to your internal-test listing URL:
+  // ⚠️ Set these:
+  const PKG = "nametag.hello"; // ← your real applicationId
   const INTERNAL_TEST_WEB = "https://play.google.com/apps/internaltest/4700760087118708525";
 
   const tokenEl = document.getElementById("token");
   const openBtn = document.getElementById("openApp");
   const getBtn  = document.getElementById("getApp");
 
-  // Try opening the custom scheme first. If it doesn't switch away (page stays visible),
-  // after a short delay we fall back to the Play Store web URL.
+  // Open in app (installed): try custom scheme, fall back to internal-test web
   openBtn.onclick = (e) => {
     e.preventDefault();
     const t = (tokenEl.value || "").trim();
@@ -41,18 +41,38 @@
       if (document.visibilityState === "hidden") leftPage = true;
     }, { once: true });
 
-    // 1) Try plain custom-scheme (works if app is installed and manifest matches)
     window.location.href = `nametag://i/${encodeURIComponent(t)}`;
 
-    // 2) If app didn't open, fall back to internal-test listing (no back stack)
     setTimeout(() => {
       if (!leftPage) window.location.replace(INTERNAL_TEST_WEB);
     }, 700);
   };
 
-  // Direct link to internal test (install → then Open).
+  // Get the app (not installed): open Play Store APP with referrer (token),
+  // then fall back to the internal-test WEB page if the intent is blocked.
   getBtn.onclick = (e) => {
     e.preventDefault();
-    window.location.replace(INTERNAL_TEST_WEB);
+    const t = (tokenEl.value || "").trim();
+    if (!t) return;
+
+    let leftPage = false;
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") leftPage = true;
+    }, { once: true });
+
+    // Play Store APP intent with referrer carrying the token
+    const ref = encodeURIComponent(`utm_source=qr&t=${encodeURIComponent(t)}`);
+    const playAppIntent =
+      `intent://details?id=${PKG}` +
+      `#Intent;scheme=market;package=com.android.vending;S.referrer=${ref};end`;
+
+    // Try to open the Play app
+    window.location.href = playAppIntent;
+
+    // If blocked (e.g., in-app webview), fall back to the internal-test WEB page
+    setTimeout(() => {
+      if (!leftPage) window.location.replace(INTERNAL_TEST_WEB);
+    }, 700);
   };
 </script>
+
